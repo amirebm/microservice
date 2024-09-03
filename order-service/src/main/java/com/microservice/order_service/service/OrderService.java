@@ -24,7 +24,7 @@ import java.util.UUID;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final WebClient.Builder webClientBuilder;
+    private final WebClient webClient;
 
     private final ApplicationEventPublisher applicationEventPublisher;
     public void placeOrder(OrderRequest orderRequest) throws IllegalAccessException {
@@ -35,6 +35,7 @@ public class OrderService {
                 .stream()
                 .map(this::mapToDto)
                 .toList();
+
         order.setOrderLineItemList(orderLineItems);
 
 
@@ -43,32 +44,31 @@ public class OrderService {
                 .toList();
 
         //call inventory service and place order if the product is in stock
-//        Observation inventoryServiceObservation = Observation.createNotStarted("inventory-service-lookup",
-//                this.observationRegistry);
-//        inventoryServiceObservation.lowCardinalityKeyValue("call", "inventory-service");
-//        return inventoryServiceObservation.observe(() -> {
-        InventoryResponse[] inventoryResponseArray = webClientBuilder.build().get()
-                .uri("http://inventory-service/api/inventory",
+        InventoryResponse[] inventoryResponseArray= webClient.get()
+                .uri("http://localhost:8082/api/inventory",
                         uriBuilder -> uriBuilder.queryParam("skuCode", skuCodes).build())
                 .retrieve()
                 .bodyToMono(InventoryResponse[].class)
                 .block();
 
-        assert inventoryResponseArray != null;
-        boolean allProductsInStock = Arrays.stream(inventoryResponseArray)
-                .allMatch(InventoryResponse::isInStock);
+       boolean allProductsInStock= Arrays.stream(inventoryResponseArray)
+               .allMatch(InventoryResponse::isInStock);
+    /*   InventoryResponse[] inventoryResponseArray = webClientBuilder.build().get()
+                .uri("http://inventory-service/api/inventory",
+                        uriBuilder -> uriBuilder.queryParam("skuCode", skuCodes).build())
+                .retrieve()
+                .bodyToMono(InventoryResponse[].class)
+                .block();*/
+
+//        assert inventoryResponseArray != null;
+//        boolean allProductsInStock = Arrays.stream(inventoryResponseArray)
+//                .allMatch(InventoryResponse::isInStock);
 
         if (allProductsInStock) {
             orderRepository.save(order);
-
-        // publish Order Placed Event
-//     applicationEventPublisher.publishEvent(new OrderPlacedEvent(this, order.getOrderNumber()));
-//                return "Order Placed";
-    } else {
+          } else {
                 throw new IllegalArgumentException("Product is not in stock, please try again later");
-            }
-
-       }
+            }       }
     private OrderLineItems mapToDto(OrderLineItemsDto orderLineItemsDto){
         OrderLineItems orderLineItems=new OrderLineItems();
         orderLineItems.setPrice(orderLineItemsDto.getPrice());
