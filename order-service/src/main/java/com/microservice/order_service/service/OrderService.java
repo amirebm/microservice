@@ -6,6 +6,7 @@ import com.microservice.order_service.dto.OrderRequest;
 import com.microservice.order_service.model.Order;
 import com.microservice.order_service.model.OrderLineItems;
 import com.microservice.order_service.repository.OrderRepository;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ public class OrderService {
     private final WebClient.Builder webClientBuilder;
 
     private final ApplicationEventPublisher applicationEventPublisher;
-    public void placeOrder(OrderRequest orderRequest) throws IllegalAccessException {
+    public String placeOrder(OrderRequest orderRequest) throws IllegalAccessException {
         Order order = new Order();
         order.setOrderNumber(UUID.randomUUID().toString());
 
@@ -51,10 +52,11 @@ public class OrderService {
 
        boolean allProductsInStock= Arrays.stream(inventoryResponseArray)
                .allMatch(InventoryResponse::isInStock);
-
         if (allProductsInStock) {
             orderRepository.save(order);
-          } else {
+            return "order placed successfully";
+
+        } else {
                 throw new IllegalArgumentException("Product is not in stock, please try again later");
             }       }
     private OrderLineItems mapToDto(OrderLineItemsDto orderLineItemsDto){
