@@ -36,3 +36,8 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+##Socket files are special files used for
+#communication between processes, and they do not need to be versioned with Git.
+volume-data/mysql_keycloak_data/mysql.sock
+volume-data/mysql_keycloak_data/
